@@ -412,10 +412,12 @@ function! s:filter_oldfiles(path_prefix, path_format) abort
     endif
 
     let absolute_path = glob(fnameescape(fnamemodify(resolve(fname), ":p")))
+    if empty(absolute_path)
+      continue
+    endif
 
     " filter duplicates, bookmarks and entries from the skiplist
     if has_key(entries, absolute_path)
-          \ || !filereadable(absolute_path)
           \ || s:is_in_skiplist(absolute_path)
           \ || (exists('g:startify_bookmarks') && s:is_bookmark(absolute_path))
       continue
