@@ -99,6 +99,8 @@ function! startify#insane_in_the_membrane() abort
         \ 'bookmarks',
         \ ])
 
+  call s:get_session_files()
+
   for item in s:lists
     if type(item) == 1
       call s:show_{item}()
@@ -387,6 +389,19 @@ function! s:display_by_path(path_prefix, path_format) abort
   endif
 endfunction
 
+" Function: s:get_session_files {{{1
+function! s:get_session_files() abort
+  let s:cached_session_files = []
+  if !empty(v:this_session)
+    for line in readfile(v:this_session)
+      let tokens = matchlist(line, '\v^badd \+\d+ (.*$)')
+      if !empty(tokens)
+        call insert(s:cached_session_files, fnamemodify(tokens[1], ':p'), 0)
+      endif
+    endfor
+  endif
+endfunction
+
 " Function: s:filter_oldfiles {{{1
 function! s:filter_oldfiles(path_prefix, path_format) abort
   let path_prefix = '\V'. escape(a:path_prefix, '\')
@@ -406,6 +421,8 @@ function! s:filter_oldfiles(path_prefix, path_format) abort
           \ || !filereadable(absolute_path)
           \ || s:is_in_skiplist(absolute_path)
           \ || (exists('g:startify_bookmarks') && s:is_bookmark(absolute_path))
+          \ || (exists('g:startify_session_ignore_files')
+          \    && s:is_session_file(absolute_path))
           \ || match(absolute_path, path_prefix)
       continue
     endif
@@ -516,6 +533,15 @@ endfunction
 function! s:is_bookmark(arg) abort
   for foo in map(filter(copy(g:startify_bookmarks), '!isdirectory(v:val)'), 'resolve(fnamemodify(v:val, ":p"))')
     if foo == a:arg
+      return 1
+    endif
+  endfor
+endfunction
+
+" Function: s:is_session_file {{{1
+function! s:is_session_file(arg) abort
+  for path in s:cached_session_files
+    if path == a:arg
       return 1
     endif
   endfor
